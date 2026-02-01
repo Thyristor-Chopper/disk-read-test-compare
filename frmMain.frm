@@ -1,6 +1,6 @@
 VERSION 5.00
 Begin VB.Form frmMain 
-   Caption         =   "디스크 섹터 검사 및 시간 경과 후 읽기 시간 비교"
+   Caption         =   "디스크 섹터 검사 및 읽기 시간 비교"
    ClientHeight    =   10935
    ClientLeft      =   60
    ClientTop       =   450
@@ -36,6 +36,7 @@ Begin VB.Form frmMain
       ScaleHeight     =   4755
       ScaleWidth      =   8595
       TabIndex        =   17
+      TabStop         =   0   'False
       Top             =   5760
       Visible         =   0   'False
       Width           =   8655
@@ -157,6 +158,7 @@ Begin VB.Form frmMain
       ScaleHeight     =   4995
       ScaleWidth      =   6555
       TabIndex        =   1
+      TabStop         =   0   'False
       Top             =   600
       Width           =   6615
       Begin prjReadTest.SpinBox txtBlockSize 
@@ -361,6 +363,7 @@ Sub FixOldFormat(Coll As Collection)
     Dim spl() As String
     spl = Split(Str, ",")
     If UBound(spl) - LBound(spl) + 1 <= 3 Then Exit Sub
+    On Error Resume Next
     Dim i As Long
     For i = Coll.Count To 1
         Coll.Remove i

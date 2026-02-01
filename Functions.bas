@@ -1044,11 +1044,14 @@ Function ReadLine(ByVal Path As String) As Collection
                 Dim LineLen As Long
                 LineLen = CarryLen + (i - LineStart)
                 If LineLen > 0 Then
+                    On Error GoTo Nextln
                     ReDim LineBytes(LineLen - 1)
                     If CarryLen Then CopyMemory LineBytes(0), Carry(0), CarryLen
                     CopyMemory LineBytes(CarryLen), Buffer(LineStart), i - LineStart - 1&
                     CurLine = StrConv(LineBytes, vbUnicode)
                     ReadLine.Add CurLine
+Nextln:
+                    On Error GoTo 0
                 End If
                 CarryLen = 0&
                 LineStart = i + 1&
