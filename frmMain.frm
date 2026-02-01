@@ -623,13 +623,14 @@ Private Sub cmdStart_Click()
     hVol = CreateFile("\\.\" & DriveLetter, GENERIC_READ, FILE_SHARE_READ Or FILE_SHARE_WRITE, 0&, OPEN_EXISTING, FILE_FLAG_NO_BUFFERING Or FILE_FLAG_SEQUENTIAL_SCAN, 0&)
     If hVol = -1 Then
         MsgBox "선택한 볼륨을 열 수 없습니다. 권한이 없거나 드라이브에 디스크가 없거나 드라이브가 잠겨 있습니다", 16
-        GoTo EndRead
+        Exit Sub
     End If
     
     '할당 단위 크기
     If GetDiskFreeSpace(DriveLetter & "\", sectorsPerCluster, bytesPerSector, numFreeClusters, totalClusters) = 0 Then
         MsgBox "선택한 볼륨의 할당 단위 크기를 알아내는 데 실패했습니다. 권한이 없거나 드라이브에 디스크가 없거나 드라이브가 잠겨 있습니다", 16
-        GoTo EndRead
+        CloseHandle hVol
+        Exit Sub
     End If
     
     Dim allocationUnit As Currency
@@ -638,7 +639,8 @@ Private Sub cmdStart_Click()
     '총 크기
     If DeviceIoControl(hVol, IOCTL_DISK_GET_LENGTH_INFO, 0&, 0&, LengthInfo, Len(LengthInfo), BytesReturned, 0&) = 0 Then
         MsgBox "선택한 볼륨의 전체 크기를 알아내는 데 실패했습니다. 권한이 없거나 드라이브에 디스크가 없거나 드라이브가 잠겨 있습니다", 16
-        GoTo EndRead
+        CloseHandle hVol
+        Exit Sub
     End If
     
     TotalSectors = (LengthInfo.Length * 10000) / bytesPerSector
@@ -649,7 +651,10 @@ Private Sub cmdStart_Click()
     Else
         BlockSize = txtBlockSize.Value
         If BlockSize Mod 8 <> 0 Then
-            If MsgBox("블록 크기는 8의 배수로 하는 게 좋습니다. 그래도 그냥 무시하고 진행하시겠습니까?", vbQuestion + vbYesNo) <> vbYes Then Exit Sub
+            If MsgBox("블록 크기는 8의 배수로 하는 게 좋습니다. 그래도 그냥 무시하고 진행하시겠습니까?", vbQuestion + vbYesNo) <> vbYes Then
+                CloseHandle hVol
+                Exit Sub
+            End If
         End If
     End If
     
@@ -657,7 +662,8 @@ Private Sub cmdStart_Click()
     pBuffer = VirtualAlloc(0, CLng(BlockSize * bytesPerSector), MEM_RESERVE Or MEM_COMMIT, PAGE_READWRITE)
     If pBuffer = 0 Then
         MsgBox "사용가능한 메모리가 부족합니다", 16
-        GoTo EndRead
+        CloseHandle hVol
+        Exit Sub
     End If
     
     QueryPerformanceFrequency Frequency
@@ -747,7 +753,7 @@ EndRead:
         sbStatusBar.Panels(1).Text = "완료"
         pbProgress.Value = pbProgress.Max
     End If
-    lvTestResult.ListItems(lvTestResult.ListItems.Count).EnsureVisible
+    If lvTestResult.ListItems.Count Then lvTestResult.ListItems(lvTestResult.ListItems.Count).EnsureVisible
     lvTestResult.Redraw = True
     FlagStop = False
     cmdStart.Enabled = True
