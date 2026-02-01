@@ -1,6 +1,23 @@
 Attribute VB_Name = "Functions"
 Option Explicit
 
+Private Type LVITEM
+    Mask As Long
+    iItem As Long
+    iSubItem As Long
+    State As Long
+    StateMask As Long
+    pszText As String
+    cchTextMax As Long
+    iImage As Long
+    lParam As Long
+End Type
+
+Private Const LVM_GETITEMTEXT As Long = &H102D&
+Private Const LVM_GETITEMCOUNT As Long = &H1004&
+Private Const LVIF_TEXT As Long = &H1&
+Private Const MAX_TEXT As Long = 256&
+
 Declare Function SetParent Lib "user32" (ByVal hWndChild As Long, ByVal hWndNewParent As Long) As Long
 Declare Function GetSystemMetrics Lib "user32" (ByVal nIndex As Long) As Long
 Declare Function SetWindowPos Lib "user32" (ByVal hWnd As Long, ByVal hWndInsertAfter As Long, ByVal X As Long, ByVal Y As Long, ByVal CX As Long, ByVal CY As Long, ByVal wFlags As Long) As Long
@@ -88,6 +105,7 @@ Public Const WA_ACTIVE As Long = 1&
 
 Declare Function CreateFile Lib "kernel32" Alias "CreateFileA" (ByVal lpFileName As String, ByVal dwDesiredAccess As Long, ByVal dwShareMode As Long, ByVal lpSecurityAttributes As Long, ByVal dwCreationDisposition As Long, ByVal dwFlagsAndAttributes As Long, ByVal hTemplateFile As Long) As Long
 Declare Function ReadFile Lib "kernel32" (ByVal hFile As Long, lpBuffer As Any, ByVal nNumberOfBytesToRead As Long, lpNumberOfBytesRead As Long, ByVal lpOverlapped As Long) As Long
+Declare Function WriteFile Lib "kernel32" (ByVal hFile As Long, lpBuffer As Any, ByVal nNumberOfBytesToWrite As Long, lpNumberOfBytesWritten As Long, ByVal lpOverlapped As Long) As Long
 Declare Function CloseHandle Lib "kernel32" (ByVal hObject As Long) As Long
 Declare Function DeviceIoControl Lib "kernel32" (ByVal hDevice As Long, ByVal dwIoControlCode As Long, ByVal lpInBuffer As Long, ByVal nInBufferSize As Long, lpOutBuffer As Any, ByVal nOutBufferSize As Long, lpBytesReturned As Long, ByVal lpOverlapped As Long) As Long
 Declare Function GetTickCount Lib "kernel32" () As Long
@@ -107,10 +125,13 @@ Public Const PAGE_READWRITE As Long = &H4&
 Public Const FILE_BEGIN As Long = 0&
 
 Public Const GENERIC_READ As Long = &H80000000
+Public Const GENERIC_WRITE As Long = &H40000000
 Public Const FILE_SHARE_READ As Long = &H1&
 Public Const FILE_SHARE_WRITE As Long = &H2&
 Public Const FILE_FLAG_NO_BUFFERING As Long = &H20000000
 Public Const FILE_FLAG_SEQUENTIAL_SCAN As Long = &H8000000
+Public Const FILE_ATTRIBUTE_NORMAL As Long = &H80&
+Public Const CREATE_ALWAYS As Long = 2&
 Public Const OPEN_EXISTING As Long = 3&
 
 Public Const FSCTL_LOCK_VOLUME As Long = &H90018
@@ -733,6 +754,10 @@ Function ShowMessageBox(ByVal Content As String, Optional ByVal Title As String,
                 MessageBox.cmdYes.Top = MessageBox.cmdYes.Top + 180
                 MessageBox.cmdNo.Top = MessageBox.cmdNo.Top + 180
             End If
+'            If NoIcon Then
+'                MessageBox.cmdYes.Top = MessageBox.cmdYes.Top - 210
+'                MessageBox.cmdNo.Top = MessageBox.cmdNo.Top - 210
+'            End If
         Case vbYesNoEx
             MessageBox.cmdOK.Left = MessageBox.Width / 2 - 810 - MessageBox.cmdOK.Width / 2
             MessageBox.cmdOK.Top = 840 + (LineCount * 185) - 350 + 705
@@ -740,8 +765,6 @@ Function ShowMessageBox(ByVal Content As String, Optional ByVal Title As String,
             MessageBox.cmdCancel.Top = 840 + (LineCount * 185) - 350 + 705
             MessageBox.optYes.Top = MessageBox.cmdOK.Top - 620
             MessageBox.optNo.Top = MessageBox.cmdOK.Top - 320
-            MessageBox.optYes.Caption = YesCaption
-            MessageBox.optNo.Caption = NoCaption
             If LineCount > 1 Then
                 MessageBox.optYes.Top = MessageBox.optYes.Top - 80
                 MessageBox.optNo.Top = MessageBox.optNo.Top - 80
@@ -762,6 +785,12 @@ Function ShowMessageBox(ByVal Content As String, Optional ByVal Title As String,
                 MessageBox.cmdOK.Top = MessageBox.cmdOK.Top + 180
                 MessageBox.cmdCancel.Top = MessageBox.cmdCancel.Top + 180
             End If
+'            If NoIcon Then
+'                MessageBox.cmdOK.Top = MessageBox.cmdOK.Top - 210
+'                MessageBox.cmdCancel.Top = MessageBox.cmdCancel.Top - 210
+'                MessageBox.optYes.Top = MessageBox.optYes.Top - 210
+'                MessageBox.optNo.Top = MessageBox.optNo.Top - 210
+'            End If
         Case vbYesNoCancel
             MessageBox.cmdYes.Left = MessageBox.Width / 2 - 900 - MessageBox.cmdYes.Width
             MessageBox.cmdYes.Top = 840 + (LineCount * 185) - 350
@@ -775,6 +804,11 @@ Function ShowMessageBox(ByVal Content As String, Optional ByVal Title As String,
                 MessageBox.cmdNo.Top = MessageBox.cmdNo.Top + 180
                 MessageBox.cmdCancel.Top = MessageBox.cmdCancel.Top + 180
             End If
+'            If NoIcon Then
+'                MessageBox.cmdCancel.Top = MessageBox.cmdCancel.Top - 210
+'                MessageBox.cmdYes.Top = MessageBox.cmdYes.Top - 210
+'                MessageBox.cmdNo.Top = MessageBox.cmdNo.Top - 210
+'            End If
         Case vbRetryCancel
             MessageBox.cmdRetry.Left = MessageBox.Width / 2 - 810 - MessageBox.cmdRetry.Width / 2
             MessageBox.cmdRetry.Top = 840 + (LineCount * 185) - 350
@@ -785,7 +819,10 @@ Function ShowMessageBox(ByVal Content As String, Optional ByVal Title As String,
                 MessageBox.cmdRetry.Top = MessageBox.cmdRetry.Top + 180
                 MessageBox.cmdCancel.Top = MessageBox.cmdCancel.Top + 180
             End If
-#If False Then
+'            If NoIcon Then
+'                MessageBox.cmdRetry.Top = MessageBox.cmdRetry.Top - 210
+'                MessageBox.cmdCancel.Top = MessageBox.cmdCancel.Top - 210
+'            End If
         Case vbAbortRetryIgnore
             MessageBox.cmdAbort.Left = MessageBox.Width / 2 - 900 - MessageBox.cmdAbort.Width
             MessageBox.cmdAbort.Top = 840 + (LineCount * 185) - 350
@@ -799,6 +836,11 @@ Function ShowMessageBox(ByVal Content As String, Optional ByVal Title As String,
                 MessageBox.cmdRetry.Top = MessageBox.cmdRetry.Top + 180
                 MessageBox.cmdIgnore.Top = MessageBox.cmdIgnore.Top + 180
             End If
+'            If NoIcon Then
+'                MessageBox.cmdIgnore.Top = MessageBox.cmdIgnore.Top - 210
+'                MessageBox.cmdAbort.Top = MessageBox.cmdAbort.Top - 210
+'                MessageBox.cmdRetry.Top = MessageBox.cmdRetry.Top - 210
+'            End If
         Case vbOKCancel
             MessageBox.cmdOK.Left = MessageBox.Width / 2 - 810 - MessageBox.cmdOK.Width / 2
             MessageBox.cmdOK.Top = 840 + (LineCount * 185) - 350
@@ -809,6 +851,10 @@ Function ShowMessageBox(ByVal Content As String, Optional ByVal Title As String,
                 MessageBox.cmdOK.Top = MessageBox.cmdOK.Top + 180
                 MessageBox.cmdCancel.Top = MessageBox.cmdCancel.Top + 180
             End If
+'            If NoIcon Then
+'                MessageBox.cmdOK.Top = MessageBox.cmdOK.Top - 210
+'                MessageBox.cmdCancel.Top = MessageBox.cmdCancel.Top - 210
+'            End If
         Case vbCancelTryContinue
             MessageBox.cmdCancel.Left = MessageBox.Width / 2 - 900 - MessageBox.cmdCancel.Width
             MessageBox.cmdCancel.Top = 840 + (LineCount * 185) - 350
@@ -822,14 +868,21 @@ Function ShowMessageBox(ByVal Content As String, Optional ByVal Title As String,
                 MessageBox.cmdTryAgain.Top = MessageBox.cmdTryAgain.Top + 180
                 MessageBox.cmdContinue.Top = MessageBox.cmdContinue.Top + 180
             End If
-#End If
-        Case Else
+'            If NoIcon Then
+'                MessageBox.cmdContinue.Top = MessageBox.cmdContinue.Top - 210
+'                MessageBox.cmdCancel.Top = MessageBox.cmdCancel.Top - 210
+'                MessageBox.cmdTryAgain.Top = MessageBox.cmdTryAgain.Top - 210
+'            End If
+        Case Else 'vbOKOnly
             MessageBox.cmdOK.Left = MessageBox.Width / 2 - 810 + 30
             MessageBox.cmdOK.Top = 840 + (LineCount * 185) - 350
             If LineCount < 2 Then
                 MessageBox.Height = MessageBox.Height + 180
                 MessageBox.cmdOK.Top = MessageBox.cmdOK.Top + 180
             End If
+'            If NoIcon Then
+'                MessageBox.cmdOK.Top = MessageBox.cmdOK.Top - 210
+'            End If
     End Select
     
     MessageBox.lblContent.Height = MessageBox.Height
@@ -889,7 +942,6 @@ End Function
 
 Function MsgBox(ByVal Prompt As String, Optional Buttons As VbMsgBoxStyle = vbOKOnly, Optional ByVal Title As String) As VbMsgBoxResult
     If Title = "" Then Title = App.Title
-
     If Buttons > 70 Then
         GoTo nativemsgbox
     ElseIf Buttons < 16 Then
@@ -949,4 +1001,65 @@ Function Right(Str As String, Length As Long) As String
     Exit Function
 errproc:
     Right = ""
+End Function
+
+Function ListItemText(hWnd As Long, ByVal iItem As Long, Optional ByVal iSubItem As Long = 0&) As String
+    Dim sText As String: sText = String$(MAX_TEXT, vbNullChar)
+    
+    Dim Item As LVITEM
+    Item.Mask = LVIF_TEXT
+    Item.iItem = iItem
+    Item.iSubItem = iSubItem
+    Item.pszText = sText
+    Item.cchTextMax = MAX_TEXT
+    
+    SendMessage hWnd, LVM_GETITEMTEXT, iItem - 1&, Item
+    ListItemText = Left$(Item.pszText, InStr(Item.pszText, vbNullChar) - 1)
+End Function
+
+Function ReadLine(ByVal Path As String) As Collection
+    Dim hFile As Long
+    Dim BytesRead As Long
+    Dim BufferSize As Long
+    Dim LineStart As Long
+    Set ReadLine = New Collection
+    Dim i As Long
+    BufferSize = 65536
+    Dim Buffer() As Byte
+    ReDim Buffer(BufferSize - 1)
+    Dim Carry() As Byte
+    Dim CarryLen As Long
+    ReDim Carry(0)
+    CarryLen = 0&
+    hFile = CreateFile(Path, GENERIC_READ, FILE_SHARE_READ, 0&, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0&)
+    If hFile = -1 Then Exit Function
+    Dim CurLine As String
+    Do
+        If ReadFile(hFile, Buffer(0), BufferSize, BytesRead, 0&) = 0& Then Exit Do
+        If BytesRead = 0& Then Exit Do
+        LineStart = 0&
+        For i = 0& To BytesRead - 1&
+            If Buffer(i) = 10 Then
+                Dim LineBytes() As Byte
+                Dim LineLen As Long
+                LineLen = CarryLen + (i - LineStart)
+                If LineLen > 0 Then
+                    ReDim LineBytes(LineLen - 1)
+                    If CarryLen Then CopyMemory LineBytes(0), Carry(0), CarryLen
+                    CopyMemory LineBytes(CarryLen), Buffer(LineStart), i - LineStart - 1&
+                    CurLine = StrConv(LineBytes, vbUnicode)
+                    ReadLine.Add CurLine
+                End If
+                CarryLen = 0&
+                LineStart = i + 1&
+            End If
+        Next i
+        If LineStart < BytesRead Then
+            CarryLen = BytesRead - LineStart
+            ReDim Carry(CarryLen - 1)
+            CopyMemory Carry(0), Buffer(LineStart), CarryLen
+        End If
+    Loop
+    If CarryLen Then ReadLine.Add StrConv(Carry, vbUnicode)
+    CloseHandle hFile
 End Function

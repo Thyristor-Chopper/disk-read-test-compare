@@ -1,11 +1,10 @@
 VERSION 5.00
-Begin VB.Form frmComparing 
+Begin VB.Form frmProcessing 
    BorderStyle     =   3  '크기 고정 대화 상자
-   Caption         =   "비교 중..."
-   ClientHeight    =   1380
+   ClientHeight    =   1515
    ClientLeft      =   45
    ClientTop       =   435
-   ClientWidth     =   4935
+   ClientWidth     =   5835
    BeginProperty Font 
       Name            =   "굴림"
       Size            =   9
@@ -19,35 +18,34 @@ Begin VB.Form frmComparing
    LinkTopic       =   "Form1"
    MaxButton       =   0   'False
    MinButton       =   0   'False
-   ScaleHeight     =   1380
-   ScaleWidth      =   4935
+   ScaleHeight     =   1515
+   ScaleWidth      =   5835
    ShowInTaskbar   =   0   'False
    StartUpPosition =   1  '소유자 가운데
    Begin VB.CommandButton cmdCancel 
       Caption         =   "취소"
       Default         =   -1  'True
       Height          =   330
-      Left            =   1800
+      Left            =   2280
       TabIndex        =   1
-      Top             =   960
+      Top             =   1080
       Width           =   1335
    End
    Begin prjReadTest.ProgressBar pbProgress 
       Height          =   255
       Left            =   960
-      Top             =   600
-      Width           =   3615
-      _ExtentX        =   6376
+      Top             =   720
+      Width           =   4575
+      _ExtentX        =   8070
       _ExtentY        =   450
       Step            =   10
    End
-   Begin VB.Label Label1 
-      Caption         =   "두 측정 기록을 비교하고 있습니다..."
+   Begin VB.Label lblStatus 
       Height          =   255
       Left            =   960
       TabIndex        =   0
       Top             =   360
-      Width           =   3495
+      Width           =   4575
    End
    Begin VB.Image imgIcon 
       Height          =   480
@@ -57,22 +55,46 @@ Begin VB.Form frmComparing
       Width           =   480
    End
 End
-Attribute VB_Name = "frmComparing"
+Attribute VB_Name = "frmProcessing"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
 
+Public AllowCancel As Boolean
+Public Cancelled As Boolean
+
+Private Sub DisableClose()
+    Dim SystemMenu As Long
+    SystemMenu = GetSystemMenu(Me.hWnd, 0&)
+    DeleteMenu SystemMenu, SC_CLOSE, MF_BYCOMMAND
+    DeleteMenu SystemMenu, 0&, MF_BYCOMMAND
+    SetWindowPos Me.hWnd, 0&, 0&, 0&, 0&, 0&, SWP_FRAMECHANGED Or SWP_NOMOVE Or SWP_NOSIZE Or SWP_NOZORDER
+End Sub
+
 Private Sub cmdCancel_Click()
-    frmMain.FlagStopCompare = True
+    If AllowCancel = False Then Exit Sub
+    Cancelled = True
     cmdCancel.Enabled = False
+    DisableClose
+End Sub
+
+Sub Init()
+    If AllowCancel = False Then DisableClose
+    cmdCancel.Enabled = AllowCancel
+End Sub
+
+Private Sub Form_Load()
+    Cancelled = False
 End Sub
 
 Private Sub Form_QueryUnload(Cancel As Integer, UnloadMode As Integer)
     If UnloadMode = 0 Then
         Cancel = 1
-        frmMain.FlagStopCompare = True
+        If AllowCancel = False Then Exit Sub
+        Cancelled = True
         cmdCancel.Enabled = False
+        DisableClose
     End If
 End Sub
