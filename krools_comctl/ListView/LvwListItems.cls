@@ -110,7 +110,7 @@ Select Case VarType(Index)
         If Ptr <> NULL_PTR Then
             Set Item = PtrToObj(Ptr)
         Else
-            Err.Raise Number:=35600, Description:="Index out of bounds"
+            'Err.Raise Number:=35600, Description:="Index out of bounds"
         End If
     Case vbString
         Set Item = PropListItem(Index)

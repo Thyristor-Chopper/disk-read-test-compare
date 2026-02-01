@@ -1512,7 +1512,7 @@ Private Sub OKButton_Click()
         Path = lvDir.Path
         If Right$(lvDir.Path, 1) <> "\" Then Path = Path & "\"
         If Not FileExists(Path & txtFileName) Then
-            MsgBox txtFileName & vbCrLf & "파일이 없습니다." & vbCrLf & "파일 이름을 올바르게 입력했는지 확인하십시오.", 48
+            If LenB(txtFileName) Then MsgBox txtFileName & vbCrLf & "파일이 없습니다." & vbCrLf & "파일 이름을 올바르게 입력했는지 확인하십시오.", 48
             Exit Sub
         End If
         ReturnPath = Path & txtFileName
