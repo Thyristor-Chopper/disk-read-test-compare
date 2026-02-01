@@ -246,7 +246,7 @@ Begin VB.Form frmMain
          Top             =   2880
          Width           =   2295
       End
-      Begin VB.Label Label3 
+      Begin VB.Label lblBlockSizeTip 
          Caption         =   "(0: 클러스터 크기에 맞게)"
          Height          =   255
          Left            =   240
@@ -254,7 +254,7 @@ Begin VB.Form frmMain
          Top             =   2580
          Width           =   2175
       End
-      Begin VB.Label Label1 
+      Begin VB.Label lblBlockSize 
          Caption         =   "측정 블록 섹터 크기(&B):"
          Height          =   255
          Left            =   120
@@ -674,6 +674,9 @@ Private Sub cmdStart_Click()
     cmdSave.Enabled = False
     lblDrive.Enabled = False
     lvDrive.Enabled = False
+    lblBlockSize.Enabled = False
+    txtBlockSize.Enabled = False
+    lblBlockSizeTip.Enabled = False
     
     Dim CurItem As LvwListItem
     Dim i As Byte
@@ -722,7 +725,7 @@ Private Sub cmdStart_Click()
         SectorIndex = SectorIndex + SectorsToRead
         
         i = i + 1
-        If i = 250 Then
+        If i = 100 Then
             i = 0
             lvTestResult.Redraw = True
             CurItem.EnsureVisible
@@ -744,6 +747,7 @@ EndRead:
         sbStatusBar.Panels(1).Text = "완료"
         pbProgress.Value = pbProgress.Max
     End If
+    lvTestResult.ListItems(lvTestResult.ListItems.Count).EnsureVisible
     lvTestResult.Redraw = True
     FlagStop = False
     cmdStart.Enabled = True
@@ -754,6 +758,9 @@ EndRead:
     cmdSave.Enabled = True
     lblDrive.Enabled = True
     lvDrive.Enabled = True
+    lblBlockSize.Enabled = True
+    txtBlockSize.Enabled = True
+    lblBlockSizeTip.Enabled = True
 End Sub
 
 Private Sub cmdStop_Click()
