@@ -1,6 +1,6 @@
 VERSION 5.00
 Begin VB.Form frmMain 
-   Caption         =   "디스크 섹터 검사 및 읽기 시간 비교"
+   Caption         =   "디스크 검사 및 읽기 비교"
    ClientHeight    =   10935
    ClientLeft      =   60
    ClientTop       =   450
@@ -257,7 +257,7 @@ Begin VB.Form frmMain
          Width           =   2175
       End
       Begin VB.Label lblBlockSize 
-         Caption         =   "측정 블록 섹터 크기(&B):"
+         Caption         =   "측정 블록 섹터 수(&B):"
          Height          =   255
          Left            =   120
          TabIndex        =   8
@@ -736,8 +736,8 @@ Private Sub cmdStart_Click()
         i = i + 1
         If i = 100 Then
             i = 0
-            lvTestResult.Redraw = True
             CurItem.EnsureVisible
+            lvTestResult.Redraw = True
             DoEvents
             lvTestResult.Redraw = False
             pbProgress.Value = CInt((SectorIndex / TotalSectors) * 100)
@@ -974,13 +974,14 @@ Private Sub lvDrive_Change()
     
     If GetDiskFreeSpace(DriveLetter & "\", sectorsPerCluster, bytesPerSector, numFreeClusters, totalClusters) = 0 Then
         lblAllocUnit = "알 수 없음"
+        CurrentDriveAllocationUnit = -1
     Else
         Dim allocationUnit As Currency
         allocationUnit = CCur(sectorsPerCluster) * bytesPerSector
         lblAllocUnit = ParseSize(allocationUnit)
         CurrentDriveAllocationUnit = allocationUnit
-        txtBlockSize_Change
     End If
+    txtBlockSize_Change
     
     Dim hVol As Long
     
@@ -1039,7 +1040,9 @@ Private Sub tsTabStrip_TabClick(TabItem As TbsTab)
 End Sub
 
 Private Sub txtBlockSize_Change()
-    If txtBlockSize.Value = 0 Then
+    If CurrentDriveAllocationUnit = -1 Then
+        lblParsedBlock = "알 수 없음"
+    ElseIf txtBlockSize.Value = 0 Then
         lblParsedBlock = "(자동)"
     Else
         lblParsedBlock = ParseSize(txtBlockSize.Value * CurrentDriveAllocationUnit)
